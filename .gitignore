@@ -1,6 +1,9 @@
 # Vercel
 .vercel
 
+# Build output
+public/
+
 # Generated config with secrets
 config.generated.js
 
