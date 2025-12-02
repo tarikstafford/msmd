@@ -187,9 +187,14 @@ async function onUserSignedIn() {
     showLoading();
 
     try {
-        // Upsert profile
+        // Upsert profile (temporarily skip if it fails to unblock testing)
         console.log('Upserting profile...');
-        await upsertProfile();
+        try {
+            await upsertProfile();
+        } catch (profileError) {
+            console.warn('Profile upsert failed, continuing anyway:', profileError);
+            // Don't throw - continue with app load
+        }
 
         // Load user's groups
         console.log('Loading groups...');
@@ -234,24 +239,37 @@ async function upsertProfile() {
     const user = state.user;
     console.log('Upserting profile for user:', user.id, user.email);
 
-    const { data, error } = await supabase
-        .from('profiles')
-        .upsert({
-            id: user.id,
-            email: user.email,
-            display_name: user.user_metadata.full_name || user.email,
-            avatar_url: user.user_metadata.avatar_url || null
-        }, {
-            onConflict: 'id'
-        })
-        .select();
+    try {
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Profile upsert timeout after 10s')), 10000);
+        });
 
-    if (error) {
-        console.error('Profile upsert error:', error);
+        // Race between upsert and timeout
+        const upsertPromise = supabase
+            .from('profiles')
+            .upsert({
+                id: user.id,
+                email: user.email,
+                display_name: user.user_metadata.full_name || user.email,
+                avatar_url: user.user_metadata.avatar_url || null
+            }, {
+                onConflict: 'id'
+            })
+            .select();
+
+        const { data, error } = await Promise.race([upsertPromise, timeoutPromise]);
+
+        if (error) {
+            console.error('Profile upsert error:', error);
+            throw error;
+        }
+
+        console.log('Profile upserted successfully:', data);
+    } catch (error) {
+        console.error('Profile upsert failed:', error);
         throw error;
     }
-
-    console.log('Profile upserted successfully:', data);
 }
 
 function updateUserProfile() {
