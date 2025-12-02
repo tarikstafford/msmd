@@ -205,7 +205,16 @@ async function onUserSignedIn() {
         if (state.groups.length === 0) {
             // First time user - create default group
             console.log('Creating default group...');
-            await createDefaultGroup();
+            try {
+                await createDefaultGroup();
+                console.log('Default group created, groups count:', state.groups.length);
+            } catch (groupError) {
+                console.error('Failed to create default group:', groupError);
+                // Show error but continue - user can create manually
+                showApp();
+                alert('Welcome! Unable to create default board. Please create one manually using the "+ New Board" button.\n\nError: ' + groupError.message);
+                return;
+            }
         }
 
         // Set current group to first group
@@ -213,6 +222,8 @@ async function onUserSignedIn() {
             state.currentGroup = state.groups[0];
             console.log('Loading group data for:', state.currentGroup.name);
             await loadGroupData();
+        } else {
+            console.warn('No groups available after creation attempt');
         }
 
         // Check for localStorage migration
