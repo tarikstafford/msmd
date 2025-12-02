@@ -1,0 +1,11 @@
+{
+  "name": "hang-and-breathe",
+  "version": "1.0.0",
+  "description": "Competitive habit tracker for hang and meditation",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "keywords": ["habit-tracker", "meditation", "fitness"],
+  "author": "",
+  "license": "MIT"
+}

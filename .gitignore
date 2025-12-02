@@ -1,6 +1,12 @@
 # Vercel
 .vercel
 
+# Generated config with secrets
+config.generated.js
+
+# Dependencies
+node_modules/
+
 # OS files
 .DS_Store
 Thumbs.db

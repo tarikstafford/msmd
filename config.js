@@ -2,12 +2,12 @@
 // SUPABASE CONFIGURATION
 // ====================
 
-// IMPORTANT: Replace these with your actual Supabase credentials
-// Get these from: https://app.supabase.com/project/_/settings/api
+// Configuration loaded from environment variables in Vercel
+// Set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel dashboard
 
 const SUPABASE_CONFIG = {
-    url: 'YOUR_SUPABASE_URL', // e.g. https://xxxxx.supabase.co
-    anonKey: 'YOUR_SUPABASE_ANON_KEY'
+    url: '__SUPABASE_URL__',
+    anonKey: '__SUPABASE_ANON_KEY__'
 };
 
 // Export for use in app
