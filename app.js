@@ -168,48 +168,65 @@ async function signOut() {
 }
 
 async function handleAuthStateChange(event, session) {
+    console.log('Auth state change:', event, 'Session:', session ? 'exists' : 'none');
+
     if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
+        console.log('User signed in:', session.user.email);
         state.user = session.user;
         await onUserSignedIn();
     } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
         showSignIn();
+    } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed');
     }
 }
 
 async function onUserSignedIn() {
+    console.log('Starting onUserSignedIn...');
     showLoading();
 
     try {
         // Upsert profile
+        console.log('Upserting profile...');
         await upsertProfile();
 
         // Load user's groups
+        console.log('Loading groups...');
         await loadGroups();
+        console.log('Groups loaded:', state.groups.length);
 
         // Check if user has groups
         if (state.groups.length === 0) {
             // First time user - create default group
+            console.log('Creating default group...');
             await createDefaultGroup();
         }
 
         // Set current group to first group
         if (state.groups.length > 0) {
             state.currentGroup = state.groups[0];
+            console.log('Loading group data for:', state.currentGroup.name);
             await loadGroupData();
         }
 
         // Check for localStorage migration
+        console.log('Checking for localStorage migration...');
         await checkLocalStorageMigration();
 
         // Show app
+        console.log('Rendering app...');
         updateUserProfile();
         renderGroupSelector();
         render();
         showApp();
+        console.log('✓ App loaded successfully');
 
     } catch (error) {
-        console.error('Error loading user data:', error);
-        alert('Failed to load your data. Please refresh the page.');
+        console.error('❌ Error loading user data:', error);
+        console.error('Error details:', error.message, error.stack);
+        showSignIn();
+        alert('Failed to load your data: ' + error.message + '\n\nPlease refresh and try again.');
     }
 }
 
@@ -973,6 +990,8 @@ function initEventHandlers() {
 // ====================
 
 async function init() {
+    console.log('🚀 Initializing app...');
+
     // Initialize Supabase
     if (!initSupabase()) {
         document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h1>Configuration Error</h1><p>Please update config.js with your Supabase credentials.</p></div>';
@@ -982,16 +1001,33 @@ async function init() {
     // Set up event handlers
     initEventHandlers();
 
-    // Set up auth state listener
+    // Set up auth state listener BEFORE checking session
+    console.log('Setting up auth state listener...');
     supabase.auth.onAuthStateChange(handleAuthStateChange);
 
     // Check current session
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Checking for existing session...');
+    try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (session) {
-        state.user = session.user;
-        await onUserSignedIn();
-    } else {
+        if (error) {
+            console.error('Error getting session:', error);
+            showSignIn();
+            return;
+        }
+
+        console.log('Session check result:', session ? 'Session exists' : 'No session');
+
+        if (session) {
+            console.log('Existing session found, loading user data...');
+            state.user = session.user;
+            await onUserSignedIn();
+        } else {
+            console.log('No session, showing sign in screen');
+            showSignIn();
+        }
+    } catch (error) {
+        console.error('Error during initialization:', error);
         showSignIn();
     }
 }
