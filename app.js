@@ -232,16 +232,26 @@ async function onUserSignedIn() {
 
 async function upsertProfile() {
     const user = state.user;
-    const { error } = await supabase
+    console.log('Upserting profile for user:', user.id, user.email);
+
+    const { data, error } = await supabase
         .from('profiles')
         .upsert({
             id: user.id,
             email: user.email,
             display_name: user.user_metadata.full_name || user.email,
             avatar_url: user.user_metadata.avatar_url || null
-        });
+        }, {
+            onConflict: 'id'
+        })
+        .select();
 
-    if (error) throw error;
+    if (error) {
+        console.error('Profile upsert error:', error);
+        throw error;
+    }
+
+    console.log('Profile upserted successfully:', data);
 }
 
 function updateUserProfile() {
