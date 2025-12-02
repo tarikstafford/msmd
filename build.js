@@ -5,14 +5,19 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('🔨 Starting build...');
+console.log('Environment check:');
+console.log('- SUPABASE_URL:', process.env.SUPABASE_URL ? '✓ Set' : '✗ Not set');
+console.log('- SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✓ Set' : '✗ Not set');
 
 // Check if we have environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-    console.log('⚠️  Environment variables not set. Using placeholder values for local development.');
-    console.log('   Set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel dashboard for production.');
+    console.error('❌ ERROR: Environment variables not set!');
+    console.error('   Please set SUPABASE_URL and SUPABASE_ANON_KEY in Vercel dashboard.');
+    console.error('   Settings → Environment Variables');
+    process.exit(1);
 }
 
 // Create public directory
@@ -22,18 +27,26 @@ if (!fs.existsSync(publicDir)) {
     console.log('✓ Created public directory');
 }
 
-// Read and process config
-const configPath = path.join(__dirname, 'config.js');
-let config = fs.readFileSync(configPath, 'utf8');
+// Generate config with actual values
+const configContent = `// ====================
+// SUPABASE CONFIGURATION
+// ====================
 
-// Replace placeholders with environment variables
-config = config.replace('__SUPABASE_URL__', supabaseUrl || 'YOUR_SUPABASE_URL');
-config = config.replace('__SUPABASE_ANON_KEY__', supabaseKey || 'YOUR_SUPABASE_ANON_KEY');
+// Configuration injected at build time from Vercel environment variables
+
+const SUPABASE_CONFIG = {
+    url: '${supabaseUrl}',
+    anonKey: '${supabaseKey}'
+};
+
+// Export for use in app
+window.SUPABASE_CONFIG = SUPABASE_CONFIG;
+`;
 
 // Write config to public directory
 const configOutputPath = path.join(publicDir, 'config.generated.js');
-fs.writeFileSync(configOutputPath, config);
-console.log('✓ Generated config.generated.js');
+fs.writeFileSync(configOutputPath, configContent);
+console.log('✓ Generated config.generated.js with environment variables');
 
 // Copy static files to public directory
 const filesToCopy = ['index.html', 'app.js', 'styles.css', 'vercel.json'];
@@ -49,6 +62,4 @@ for (const file of filesToCopy) {
 }
 
 console.log('✅ Build complete!');
-if (supabaseUrl && supabaseKey) {
-    console.log('✓ Using environment variables from Vercel');
-}
+console.log('✓ Supabase credentials injected from environment variables');
