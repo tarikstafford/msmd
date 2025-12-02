@@ -27,7 +27,7 @@ if (!fs.existsSync(publicDir)) {
     console.log('✓ Created public directory');
 }
 
-// Generate config with actual values
+// Generate config with actual values - use JSON.stringify to properly escape strings
 const configContent = `// ====================
 // SUPABASE CONFIGURATION
 // ====================
@@ -35,8 +35,8 @@ const configContent = `// ====================
 // Configuration injected at build time from Vercel environment variables
 
 const SUPABASE_CONFIG = {
-    url: '${supabaseUrl}',
-    anonKey: '${supabaseKey}'
+    url: ${JSON.stringify(supabaseUrl)},
+    anonKey: ${JSON.stringify(supabaseKey)}
 };
 
 // Export for use in app
