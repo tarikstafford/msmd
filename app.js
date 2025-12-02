@@ -237,35 +237,45 @@ async function onUserSignedIn() {
 
 async function upsertProfile() {
     const user = state.user;
-    console.log('Upserting profile for user:', user.id, user.email);
+    console.log('Checking/upserting profile for user:', user.id, user.email);
 
     try {
-        // Create a timeout promise
-        const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Profile upsert timeout after 10s')), 10000);
-        });
-
-        // Race between upsert and timeout
-        const upsertPromise = supabase
+        // First check if profile exists
+        const { data: existingProfile } = await supabase
             .from('profiles')
-            .upsert({
+            .select('id')
+            .eq('id', user.id)
+            .single();
+
+        if (existingProfile) {
+            console.log('Profile already exists, skipping upsert');
+            return;
+        }
+
+        console.log('Profile does not exist, creating...');
+
+        // Only insert if doesn't exist
+        const { data, error } = await supabase
+            .from('profiles')
+            .insert({
                 id: user.id,
                 email: user.email,
                 display_name: user.user_metadata.full_name || user.email,
                 avatar_url: user.user_metadata.avatar_url || null
-            }, {
-                onConflict: 'id'
             })
             .select();
 
-        const { data, error } = await Promise.race([upsertPromise, timeoutPromise]);
-
         if (error) {
-            console.error('Profile upsert error:', error);
+            // If error is duplicate key, that's ok - profile exists
+            if (error.code === '23505') {
+                console.log('Profile already exists (race condition), continuing');
+                return;
+            }
+            console.error('Profile insert error:', error);
             throw error;
         }
 
-        console.log('Profile upserted successfully:', data);
+        console.log('Profile created successfully:', data);
     } catch (error) {
         console.error('Profile upsert failed:', error);
         throw error;
