@@ -281,6 +281,15 @@ async function createDefaultGroup() {
 }
 
 async function createGroup(name) {
+    console.log('Creating group:', name);
+    console.log('User ID:', state.user.id);
+    console.log('Auth UID check...');
+
+    // Verify we have a valid session
+    const { data: { session } } = await supabase.auth.getSession();
+    console.log('Current session user ID:', session?.user?.id);
+    console.log('Match?', session?.user?.id === state.user.id);
+
     // Create group
     const { data: group, error: groupError } = await supabase
         .from('groups')
@@ -292,7 +301,12 @@ async function createGroup(name) {
         .select()
         .single();
 
-    if (groupError) throw groupError;
+    if (groupError) {
+        console.error('Group creation error:', groupError);
+        throw groupError;
+    }
+
+    console.log('Group created successfully:', group);
 
     // Add user as member
     const { error: memberError } = await supabase
