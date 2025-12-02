@@ -167,15 +167,37 @@ async function signOut() {
     }
 }
 
+let isInitializing = false;
+
 async function handleAuthStateChange(event, session) {
     console.log('Auth state change:', event, 'Session:', session ? 'exists' : 'none');
 
-    if (event === 'SIGNED_IN' || (event === 'INITIAL_SESSION' && session)) {
+    // Skip if we're already initializing to prevent race conditions
+    if (isInitializing && event === 'INITIAL_SESSION') {
+        console.log('Already initializing, skipping duplicate INITIAL_SESSION event');
+        return;
+    }
+
+    if (event === 'SIGNED_IN') {
         console.log('User signed in:', session.user.email);
+        isInitializing = true;
         state.user = session.user;
         await onUserSignedIn();
+        isInitializing = false;
+    } else if (event === 'INITIAL_SESSION' && session) {
+        // Only process if not already initialized
+        if (!state.user) {
+            console.log('Initial session, user:', session.user.email);
+            isInitializing = true;
+            state.user = session.user;
+            await onUserSignedIn();
+            isInitializing = false;
+        } else {
+            console.log('Initial session but already have user, skipping');
+        }
     } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
+        isInitializing = false;
         showSignIn();
     } else if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed');
@@ -1064,11 +1086,11 @@ async function init() {
     // Set up event handlers
     initEventHandlers();
 
-    // Set up auth state listener BEFORE checking session
+    // Set up auth state listener
     console.log('Setting up auth state listener...');
     supabase.auth.onAuthStateChange(handleAuthStateChange);
 
-    // Check current session
+    // Check current session - but let the auth state change handler process it
     console.log('Checking for existing session...');
     try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -1081,13 +1103,12 @@ async function init() {
 
         console.log('Session check result:', session ? 'Session exists' : 'No session');
 
-        if (session) {
-            console.log('Existing session found, loading user data...');
-            state.user = session.user;
-            await onUserSignedIn();
-        } else {
+        if (!session) {
             console.log('No session, showing sign in screen');
             showSignIn();
+        } else {
+            console.log('Session exists, waiting for auth state change handler...');
+            // Don't call onUserSignedIn here - let the INITIAL_SESSION event handle it
         }
     } catch (error) {
         console.error('Error during initialization:', error);
