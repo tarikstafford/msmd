@@ -6,12 +6,41 @@ let supabase;
 
 function initSupabase() {
     const config = window.SUPABASE_CONFIG;
-    if (!config || !config.url || !config.anonKey) {
-        console.error('Supabase configuration missing. Please update config.js');
+
+    console.log('Initializing Supabase...');
+    console.log('Config loaded:', config ? 'Yes' : 'No');
+
+    if (!config) {
+        console.error('ERROR: window.SUPABASE_CONFIG is undefined');
+        console.error('Make sure config.generated.js is loaded before app.js');
         return false;
     }
-    supabase = window.supabase.createClient(config.url, config.anonKey);
-    return true;
+
+    console.log('URL present:', config.url ? 'Yes' : 'No');
+    console.log('Key present:', config.anonKey ? 'Yes' : 'No');
+
+    if (!config.url || !config.anonKey) {
+        console.error('ERROR: Supabase configuration incomplete');
+        console.error('URL:', config.url || 'MISSING');
+        console.error('Key:', config.anonKey ? 'Present' : 'MISSING');
+        return false;
+    }
+
+    // Check for placeholder values
+    if (config.url.includes('YOUR_SUPABASE') || config.url.includes('__SUPABASE')) {
+        console.error('ERROR: Placeholder values detected in config');
+        console.error('Environment variables may not be set in Vercel');
+        return false;
+    }
+
+    try {
+        supabase = window.supabase.createClient(config.url, config.anonKey);
+        console.log('✓ Supabase client initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('ERROR: Failed to create Supabase client:', error);
+        return false;
+    }
 }
 
 // ====================
