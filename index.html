@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hang & Breathe</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Hang & Breathe</h1>
+            <p class="subtitle">At least 1s hang + 1 breath, every day.</p>
+        </header>
+
+        <!-- Control Bar -->
+        <section class="control-bar">
+            <div class="date-control">
+                <label for="date-picker">Date:</label>
+                <input type="date" id="date-picker">
+            </div>
+
+            <div class="player-control">
+                <input type="text" id="player-name" placeholder="Player name">
+                <button id="add-player-btn">Add Player</button>
+            </div>
+
+            <div class="reset-control">
+                <button id="reset-btn" class="secondary">Reset All Data</button>
+            </div>
+        </section>
+
+        <!-- Daily Log Table -->
+        <section class="daily-log">
+            <h2>Daily Log</h2>
+            <div class="table-wrapper">
+                <table id="daily-log-table">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Hang (sec)</th>
+                            <th>Meditation (sec)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="daily-log-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div id="no-players-msg" class="empty-state">
+                    Add players to start tracking
+                </div>
+            </div>
+        </section>
+
+        <!-- Leaderboard Table -->
+        <section class="leaderboard">
+            <h2>Leaderboard</h2>
+            <div class="table-wrapper">
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Total Hang</th>
+                            <th>Total Med</th>
+                            <th>Current Streak</th>
+                            <th>Best Streak</th>
+                            <th>Active Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+                <div id="no-leaderboard-msg" class="empty-state">
+                    No data yet
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <p class="privacy-note">Data is stored locally in this browser only.</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
