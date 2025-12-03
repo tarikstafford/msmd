@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hang & Breathe</title>
+    <title>🐒 Monkey See, Monkey Do</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,8 +20,8 @@
     <!-- Sign In Screen -->
     <div id="signin-screen" class="signin-screen" style="display: none;">
         <div class="signin-content">
-            <h1>Hang & Breathe</h1>
-            <p class="subtitle">At least 1s hang + 1 breath, every day.</p>
+            <h1>🐒 Monkey See, Monkey Do</h1>
+            <p class="subtitle">Tiny moves, big momentum.</p>
             <button id="google-signin-btn" class="google-btn">
                 <svg width="18" height="18" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
                     <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -38,8 +41,8 @@
         <header>
             <div class="header-content">
                 <div class="header-title">
-                    <h1>Hang & Breathe</h1>
-                    <p class="subtitle">At least 1s hang + 1 breath, every day.</p>
+                    <h1>🐒 Monkey See, Monkey Do</h1>
+                    <p class="subtitle">Tiny moves, big momentum.</p>
                 </div>
                 <div class="user-profile">
                     <img id="user-avatar" class="avatar" src="" alt="User avatar">
@@ -52,14 +55,14 @@
         <!-- Group Selector Bar -->
         <section class="group-bar">
             <div class="group-selector">
-                <label for="group-select">Board:</label>
+                <label for="group-select">🐵 Your troop:</label>
                 <select id="group-select">
                     <!-- Populated by JS -->
                 </select>
             </div>
             <div class="group-actions">
-                <button id="create-group-btn" class="secondary">+ New Board</button>
-                <button id="join-group-btn" class="secondary">Join Board</button>
+                <button id="create-group-btn" class="secondary">+ New Troop</button>
+                <button id="join-group-btn" class="secondary">Join Troop</button>
                 <button id="share-group-btn" class="secondary">Share Code</button>
             </div>
         </section>
@@ -67,25 +70,26 @@
         <!-- Control Bar -->
         <section class="control-bar">
             <div class="date-control">
-                <label for="date-picker">Date:</label>
+                <label for="date-picker">Day we're logging:</label>
                 <input type="date" id="date-picker">
             </div>
 
             <div class="player-control">
-                <input type="text" id="player-name" placeholder="Player name">
-                <button id="add-player-btn">Add Player</button>
+                <input type="text" id="player-name" placeholder="Monkey name">
+                <button id="add-player-btn">Add Monkey</button>
             </div>
 
         </section>
 
         <!-- Daily Log Table -->
         <section class="daily-log">
-            <h2>Daily Log</h2>
+            <h2>Today's Swings & Stillness</h2>
+            <p class="section-subtitle">Log each monkey's hang & meditation.</p>
             <div class="table-wrapper">
                 <table id="daily-log-table">
                     <thead>
                         <tr>
-                            <th>Player</th>
+                            <th>Monkey</th>
                             <th>Hang (sec)</th>
                             <th>Meditation (sec)</th>
                             <th>Action</th>
@@ -96,20 +100,21 @@
                     </tbody>
                 </table>
                 <div id="no-players-msg" class="empty-state">
-                    Add players to start tracking
+                    No hangs yet. Add your first monkey to start. 🐒
                 </div>
             </div>
         </section>
 
         <!-- Leaderboard Table -->
         <section class="leaderboard">
-            <h2>Leaderboard</h2>
+            <h2>Troop Leaderboard</h2>
+            <p class="section-subtitle">Ranking by streak first, then total hang. Keep swinging.</p>
             <div class="table-wrapper">
                 <table id="leaderboard-table">
                     <thead>
                         <tr>
                             <th>Rank</th>
-                            <th>Player</th>
+                            <th>Monkey</th>
                             <th>Total Hang</th>
                             <th>Total Med</th>
                             <th>Current Streak</th>
@@ -122,7 +127,7 @@
                     </tbody>
                 </table>
                 <div id="no-leaderboard-msg" class="empty-state">
-                    No data yet
+                    No data yet. Time to swing. 🌳
                 </div>
             </div>
         </section>
