@@ -400,7 +400,12 @@ async function createGroup(name) {
 
     // Create group
     console.log('[CREATE_GROUP] Inserting group into database...');
-    const { data: group, error: groupError } = await supabase
+
+    const insertTimeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Group insert timeout after 5s')), 5000)
+    );
+
+    const insertPromise = supabase
         .from('groups')
         .insert({
             name: name,
@@ -409,6 +414,8 @@ async function createGroup(name) {
         })
         .select()
         .single();
+
+    const { data: group, error: groupError } = await Promise.race([insertPromise, insertTimeout]);
 
     console.log('[CREATE_GROUP] Insert completed');
 
