@@ -206,64 +206,79 @@ async function handleAuthStateChange(event, session) {
 }
 
 async function onUserSignedIn() {
-    console.log('Starting onUserSignedIn...');
+    console.log('========================================');
+    console.log('[INIT] Starting onUserSignedIn...');
+    console.log('[INIT] User:', state.user.email);
+    console.log('========================================');
     showLoading();
 
     try {
         // Upsert profile (temporarily skip if it fails to unblock testing)
-        console.log('Upserting profile...');
+        console.log('[INIT] Step 1: Upserting profile...');
         try {
             await upsertProfile();
+            console.log('[INIT] ✓ Step 1 complete');
         } catch (profileError) {
-            console.warn('Profile upsert failed, continuing anyway:', profileError);
+            console.warn('[INIT] ⚠️ Profile upsert failed, continuing anyway:', profileError);
             // Don't throw - continue with app load
         }
 
         // Load user's groups
-        console.log('Loading groups...');
+        console.log('[INIT] Step 2: Loading groups...');
         await loadGroups();
-        console.log('Groups loaded:', state.groups.length);
+        console.log('[INIT] ✓ Step 2 complete - Groups loaded:', state.groups.length);
 
         // Check if user has groups
         if (state.groups.length === 0) {
             // First time user - create default group
-            console.log('Creating default group...');
+            console.log('[INIT] Step 3: Creating default group (user has no groups)...');
             try {
                 await createDefaultGroup();
-                console.log('Default group created, groups count:', state.groups.length);
+                console.log('[INIT] ✓ Step 3 complete - Groups count:', state.groups.length);
             } catch (groupError) {
-                console.error('Failed to create default group:', groupError);
+                console.error('[INIT] ❌ Step 3 failed - Error creating default group:', groupError);
                 // Show error but continue - user can create manually
                 showApp();
-                alert('Welcome! Unable to create default board. Please create one manually using the "+ New Board" button.\n\nError: ' + groupError.message);
+                alert('Welcome! Unable to create default troop. Please create one manually using the "+ New Troop" button.\n\nError: ' + groupError.message);
                 return;
             }
+        } else {
+            console.log('[INIT] Step 3: Skipped (user already has groups)');
         }
 
         // Set current group to first group
         if (state.groups.length > 0) {
             state.currentGroup = state.groups[0];
-            console.log('Loading group data for:', state.currentGroup.name);
+            console.log('[INIT] Step 4: Loading group data for:', state.currentGroup.name);
             await loadGroupData();
+            console.log('[INIT] ✓ Step 4 complete');
         } else {
-            console.warn('No groups available after creation attempt');
+            console.warn('[INIT] ⚠️ Step 4: No groups available after creation attempt');
         }
 
         // Check for localStorage migration
-        console.log('Checking for localStorage migration...');
+        console.log('[INIT] Step 5: Checking for localStorage migration...');
         await checkLocalStorageMigration();
+        console.log('[INIT] ✓ Step 5 complete');
 
         // Show app
-        console.log('Rendering app...');
+        console.log('[INIT] Step 6: Rendering app...');
         updateUserProfile();
         renderGroupSelector();
         render();
         showApp();
-        console.log('✓ App loaded successfully');
+        console.log('[INIT] ✓ Step 6 complete');
+
+        console.log('========================================');
+        console.log('[INIT] ✅ App loaded successfully!');
+        console.log('========================================');
 
     } catch (error) {
-        console.error('❌ Error loading user data:', error);
-        console.error('Error details:', error.message, error.stack);
+        console.error('========================================');
+        console.error('[INIT] ❌ Error loading user data:', error);
+        console.error('[INIT] Error message:', error.message);
+        console.error('[INIT] Error stack:', error.stack);
+        console.error('========================================');
         showSignIn();
         alert('Failed to load your data: ' + error.message + '\n\nPlease refresh and try again.');
     }
@@ -271,10 +286,10 @@ async function onUserSignedIn() {
 
 async function upsertProfile() {
     const user = state.user;
-    console.log('Upserting profile for user:', user.id, user.email);
+    console.log('[PROFILE] Starting upsert for user:', user.id, user.email);
 
     try {
-        // Just try to insert with upsert - simpler and avoids the hanging .single() query
+        console.log('[PROFILE] Sending upsert request...');
         const { data, error } = await supabase
             .from('profiles')
             .upsert({
@@ -288,14 +303,16 @@ async function upsertProfile() {
             })
             .select();
 
+        console.log('[PROFILE] Upsert request completed');
+
         if (error) {
-            console.error('Profile upsert error:', error);
+            console.error('[PROFILE] Upsert error:', error);
             throw error;
         }
 
-        console.log('Profile upserted successfully:', data);
+        console.log('[PROFILE] ✓ Profile upserted successfully:', data);
     } catch (error) {
-        console.error('Profile upsert failed:', error);
+        console.error('[PROFILE] ❌ Profile upsert failed:', error);
         throw error;
     }
 }
@@ -318,35 +335,46 @@ function updateUserProfile() {
 // ====================
 
 async function loadGroups() {
+    console.log('[GROUPS] Loading groups for user:', state.user.id);
+
     const { data, error } = await supabase
         .from('group_members')
         .select('groups(*)')
         .eq('user_id', state.user.id);
 
-    if (error) throw error;
+    console.log('[GROUPS] Query completed, data:', data, 'error:', error);
+
+    if (error) {
+        console.error('[GROUPS] ❌ Error loading groups:', error);
+        throw error;
+    }
 
     state.groups = data.map(gm => gm.groups);
+    console.log('[GROUPS] ✓ Loaded', state.groups.length, 'groups');
 }
 
 async function createDefaultGroup() {
     const firstName = state.user.user_metadata.full_name?.split(' ')[0] || 'My';
     const groupName = `${firstName}'s Board`;
 
+    console.log('[CREATE_GROUP] Creating default group:', groupName);
     const group = await createGroup(groupName);
     state.groups.push(group);
+    console.log('[CREATE_GROUP] ✓ Default group created and added to state');
 }
 
 async function createGroup(name) {
-    console.log('Creating group:', name);
-    console.log('User ID:', state.user.id);
-    console.log('Auth UID check...');
+    console.log('[CREATE_GROUP] Starting creation for:', name);
+    console.log('[CREATE_GROUP] User ID:', state.user.id);
 
     // Verify we have a valid session
+    console.log('[CREATE_GROUP] Verifying session...');
     const { data: { session } } = await supabase.auth.getSession();
-    console.log('Current session user ID:', session?.user?.id);
-    console.log('Match?', session?.user?.id === state.user.id);
+    console.log('[CREATE_GROUP] Session user ID:', session?.user?.id);
+    console.log('[CREATE_GROUP] Match?', session?.user?.id === state.user.id);
 
     // Create group
+    console.log('[CREATE_GROUP] Inserting group into database...');
     const { data: group, error: groupError } = await supabase
         .from('groups')
         .insert({
@@ -357,14 +385,17 @@ async function createGroup(name) {
         .select()
         .single();
 
+    console.log('[CREATE_GROUP] Insert completed');
+
     if (groupError) {
-        console.error('Group creation error:', groupError);
+        console.error('[CREATE_GROUP] ❌ Group creation error:', groupError);
         throw groupError;
     }
 
-    console.log('Group created successfully:', group);
+    console.log('[CREATE_GROUP] ✓ Group created:', group);
 
     // Add user as member
+    console.log('[CREATE_GROUP] Adding user as member...');
     const { error: memberError } = await supabase
         .from('group_members')
         .insert({
@@ -372,7 +403,14 @@ async function createGroup(name) {
             user_id: state.user.id
         });
 
-    if (memberError) throw memberError;
+    console.log('[CREATE_GROUP] Member insert completed');
+
+    if (memberError) {
+        console.error('[CREATE_GROUP] ❌ Member insert error:', memberError);
+        throw memberError;
+    }
+
+    console.log('[CREATE_GROUP] ✓ User added as member');
 
     return group;
 }
@@ -443,7 +481,12 @@ function renderGroupSelector() {
 // ====================
 
 async function loadPlayers() {
-    if (!state.currentGroup) return;
+    if (!state.currentGroup) {
+        console.log('[PLAYERS] No current group, skipping load');
+        return;
+    }
+
+    console.log('[PLAYERS] Loading players for group:', state.currentGroup.id);
 
     const { data, error } = await supabase
         .from('players')
@@ -451,9 +494,15 @@ async function loadPlayers() {
         .eq('group_id', state.currentGroup.id)
         .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    console.log('[PLAYERS] Query completed, data:', data, 'error:', error);
+
+    if (error) {
+        console.error('[PLAYERS] ❌ Error loading players:', error);
+        throw error;
+    }
 
     state.players = data || [];
+    console.log('[PLAYERS] ✓ Loaded', state.players.length, 'players');
 }
 
 async function addPlayer(name) {
@@ -527,14 +576,24 @@ async function removePlayer(playerId) {
 // ====================
 
 async function loadEntries() {
-    if (!state.currentGroup) return;
+    if (!state.currentGroup) {
+        console.log('[ENTRIES] No current group, skipping load');
+        return;
+    }
+
+    console.log('[ENTRIES] Loading entries for group:', state.currentGroup.id);
 
     const { data, error } = await supabase
         .from('entries')
         .select('*')
         .eq('group_id', state.currentGroup.id);
 
-    if (error) throw error;
+    console.log('[ENTRIES] Query completed, data count:', data?.length, 'error:', error);
+
+    if (error) {
+        console.error('[ENTRIES] ❌ Error loading entries:', error);
+        throw error;
+    }
 
     // Convert to nested object: { date: { playerId: { hang, med } } }
     state.entries = {};
@@ -547,6 +606,7 @@ async function loadEntries() {
             med: entry.med_seconds
         };
     }
+    console.log('[ENTRIES] ✓ Loaded', data?.length || 0, 'entries');
 }
 
 async function updateEntry(dateISO, playerId, field, value) {
@@ -603,19 +663,26 @@ function getEntry(dateISO, playerId) {
 // ====================
 
 async function loadGroupData() {
-    if (!state.currentGroup) return;
+    if (!state.currentGroup) {
+        console.log('[LOAD_GROUP] No current group, skipping');
+        return;
+    }
 
+    console.log('[LOAD_GROUP] Loading data for group:', state.currentGroup.name);
     showLoading();
 
     try {
+        console.log('[LOAD_GROUP] Starting parallel load of players and entries...');
         await Promise.all([
             loadPlayers(),
             loadEntries()
         ]);
+        console.log('[LOAD_GROUP] ✓ Group data loaded successfully');
     } catch (error) {
-        console.error('Error loading group data:', error);
+        console.error('[LOAD_GROUP] ❌ Error loading group data:', error);
         alert('Failed to load board data. Please try again.');
     } finally {
+        console.log('[LOAD_GROUP] Showing app...');
         showApp();
     }
 }
@@ -710,17 +777,25 @@ function sortLeaderboard(stats) {
 const LEGACY_STORAGE_KEY = 'habit_hang_meditation_v1';
 
 async function checkLocalStorageMigration() {
+    console.log('[MIGRATION] Checking for localStorage data...');
     try {
         const stored = localStorage.getItem(LEGACY_STORAGE_KEY);
-        if (!stored) return;
+        if (!stored) {
+            console.log('[MIGRATION] No localStorage data found');
+            return;
+        }
 
+        console.log('[MIGRATION] Found localStorage data, parsing...');
         const legacy = JSON.parse(stored);
 
         if (!legacy.players || legacy.players.length === 0) {
+            console.log('[MIGRATION] No players to migrate, removing key');
             // No data to migrate
             localStorage.removeItem(LEGACY_STORAGE_KEY);
             return;
         }
+
+        console.log('[MIGRATION] Found', legacy.players.length, 'players to migrate');
 
         // Ask user if they want to import
         const shouldImport = confirm(
