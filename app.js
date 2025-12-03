@@ -213,15 +213,15 @@ async function onUserSignedIn() {
     showLoading();
 
     try {
-        // Upsert profile (temporarily skip if it fails to unblock testing)
-        console.log('[INIT] Step 1: Upserting profile...');
-        try {
-            await upsertProfile();
-            console.log('[INIT] ✓ Step 1 complete');
-        } catch (profileError) {
-            console.warn('[INIT] ⚠️ Profile upsert failed, continuing anyway:', profileError);
-            // Don't throw - continue with app load
-        }
+        // Upsert profile (skip for now - has RLS issues causing hangs)
+        console.log('[INIT] Step 1: Skipping profile upsert (has RLS issues)');
+        // try {
+        //     await upsertProfile();
+        //     console.log('[INIT] ✓ Step 1 complete');
+        // } catch (profileError) {
+        //     console.warn('[INIT] ⚠️ Profile upsert failed, continuing anyway:', profileError);
+        //     // Don't throw - continue with app load
+        // }
 
         // Load user's groups
         console.log('[INIT] Step 2: Loading groups...');
