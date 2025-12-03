@@ -386,9 +386,17 @@ async function createGroup(name) {
 
     // Verify we have a valid session
     console.log('[CREATE_GROUP] Verifying session...');
-    const { data: { session } } = await supabase.auth.getSession();
-    console.log('[CREATE_GROUP] Session user ID:', session?.user?.id);
-    console.log('[CREATE_GROUP] Match?', session?.user?.id === state.user.id);
+    try {
+        const sessionTimeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Session check timeout')), 3000)
+        );
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([sessionPromise, sessionTimeout]);
+        console.log('[CREATE_GROUP] Session user ID:', session?.user?.id);
+        console.log('[CREATE_GROUP] Match?', session?.user?.id === state.user.id);
+    } catch (err) {
+        console.warn('[CREATE_GROUP] Session check timed out, skipping verification');
+    }
 
     // Create group
     console.log('[CREATE_GROUP] Inserting group into database...');
