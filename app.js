@@ -337,20 +337,37 @@ function updateUserProfile() {
 async function loadGroups() {
     console.log('[GROUPS] Loading groups for user:', state.user.id);
 
-    const { data, error } = await supabase
+    // Add timeout wrapper
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Groups query timeout after 5s')), 5000)
+    );
+
+    const query = supabase
         .from('group_members')
         .select('groups(*)')
         .eq('user_id', state.user.id);
 
-    console.log('[GROUPS] Query completed, data:', data, 'error:', error);
+    try {
+        const { data, error } = await Promise.race([query, timeout]);
 
-    if (error) {
-        console.error('[GROUPS] ❌ Error loading groups:', error);
-        throw error;
+        console.log('[GROUPS] Query completed, data:', data, 'error:', error);
+
+        if (error) {
+            console.error('[GROUPS] ❌ Error loading groups:', error);
+            throw error;
+        }
+
+        state.groups = data.map(gm => gm.groups);
+        console.log('[GROUPS] ✓ Loaded', state.groups.length, 'groups');
+    } catch (err) {
+        if (err.message.includes('timeout')) {
+            console.error('[GROUPS] ❌ Query timed out - likely RLS policy issue');
+            console.error('[GROUPS] Falling back to empty groups array');
+            state.groups = [];
+        } else {
+            throw err;
+        }
     }
-
-    state.groups = data.map(gm => gm.groups);
-    console.log('[GROUPS] ✓ Loaded', state.groups.length, 'groups');
 }
 
 async function createDefaultGroup() {
