@@ -271,45 +271,29 @@ async function onUserSignedIn() {
 
 async function upsertProfile() {
     const user = state.user;
-    console.log('Checking/upserting profile for user:', user.id, user.email);
+    console.log('Upserting profile for user:', user.id, user.email);
 
     try {
-        // First check if profile exists
-        const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('id', user.id)
-            .single();
-
-        if (existingProfile) {
-            console.log('Profile already exists, skipping upsert');
-            return;
-        }
-
-        console.log('Profile does not exist, creating...');
-
-        // Only insert if doesn't exist
+        // Just try to insert with upsert - simpler and avoids the hanging .single() query
         const { data, error } = await supabase
             .from('profiles')
-            .insert({
+            .upsert({
                 id: user.id,
                 email: user.email,
                 display_name: user.user_metadata.full_name || user.email,
                 avatar_url: user.user_metadata.avatar_url || null
+            }, {
+                onConflict: 'id',
+                ignoreDuplicates: false
             })
             .select();
 
         if (error) {
-            // If error is duplicate key, that's ok - profile exists
-            if (error.code === '23505') {
-                console.log('Profile already exists (race condition), continuing');
-                return;
-            }
-            console.error('Profile insert error:', error);
+            console.error('Profile upsert error:', error);
             throw error;
         }
 
-        console.log('Profile created successfully:', data);
+        console.log('Profile upserted successfully:', data);
     } catch (error) {
         console.error('Profile upsert failed:', error);
         throw error;
