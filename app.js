@@ -171,6 +171,7 @@ let isInitializing = false;
 
 async function handleAuthStateChange(event, session) {
     console.log('Auth state change:', event, 'Session:', session ? 'exists' : 'none');
+    window._authListenerFired = true;
 
     // Skip if we're already initializing to prevent race conditions
     if (isInitializing && event === 'INITIAL_SESSION') {
@@ -1090,7 +1091,7 @@ async function init() {
     console.log('Setting up auth state listener...');
     supabase.auth.onAuthStateChange(handleAuthStateChange);
 
-    // Check current session - but let the auth state change handler process it
+    // Check current session
     console.log('Checking for existing session...');
     try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -1107,8 +1108,27 @@ async function init() {
             console.log('No session, showing sign in screen');
             showSignIn();
         } else {
-            console.log('Session exists, waiting for auth state change handler...');
-            // Don't call onUserSignedIn here - let the INITIAL_SESSION event handle it
+            console.log('Session exists, user:', session.user.email);
+            // Set a timeout fallback in case auth state listener doesn't fire
+            const fallbackTimeout = setTimeout(() => {
+                console.warn('Auth state listener did not fire after 2s, manually loading user...');
+                if (!state.user && session) {
+                    state.user = session.user;
+                    onUserSignedIn();
+                }
+            }, 2000);
+
+            // Clear timeout if auth listener fires
+            const originalHandler = handleAuthStateChange;
+            window._authListenerFired = false;
+
+            // Wait a bit to see if auth listener fires
+            setTimeout(() => {
+                if (window._authListenerFired) {
+                    console.log('Auth listener fired, clearing fallback');
+                    clearTimeout(fallbackTimeout);
+                }
+            }, 100);
         }
     } catch (error) {
         console.error('Error during initialization:', error);
