@@ -73,15 +73,28 @@ export default function Dashboard() {
     if (!joinCode.trim()) return
 
     try {
+      console.log('[JOIN] Looking for troop with code:', joinCode.toUpperCase())
+
       const { data: group, error: groupError } = await supabase
         .from('groups')
         .select('*')
         .eq('join_code', joinCode.toUpperCase())
         .single()
 
-      if (groupError || !group) {
+      console.log('[JOIN] Group query result:', { group, error: groupError })
+
+      if (groupError) {
+        if (groupError.code === 'PGRST116') {
+          throw new Error('Troop not found. Check the code and try again.')
+        }
+        throw new Error(`Database error: ${groupError.message}`)
+      }
+
+      if (!group) {
         throw new Error('Troop not found. Check the code and try again.')
       }
+
+      console.log('[JOIN] Found group:', group.name, '- Attempting to join...')
 
       const { error: memberError } = await supabase
         .from('group_members')
@@ -90,18 +103,22 @@ export default function Dashboard() {
           user_id: user.id
         })
 
+      console.log('[JOIN] Member insert result:', { error: memberError })
+
       if (memberError) {
         if (memberError.code === '23505') {
           throw new Error('You are already a member of this troop.')
         }
-        throw memberError
+        throw new Error(`Failed to join: ${memberError.message}`)
       }
 
+      console.log('[JOIN] ✓ Successfully joined troop!')
       await loadTroops()
       setShowJoinModal(false)
       setJoinCode('')
+      alert(`Successfully joined "${group.name}"!`)
     } catch (error) {
-      console.error('Error joining troop:', error)
+      console.error('[JOIN] ❌ Error:', error)
       alert(error.message)
     }
   }
