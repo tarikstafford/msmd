@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
-import SignIn from './pages/SignIn'
+import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import TroopDetail from './pages/TroopDetail'
 import Profile from './pages/Profile'
@@ -21,10 +21,26 @@ function ProtectedRoute({ children }) {
   }
 
   if (!user) {
-    return <Navigate to="/signin" replace />
+    return <Navigate to="/" replace />
   }
 
   return children
+}
+
+function LandingOrDashboard() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-content">
+          <h2>Loading...</h2>
+        </div>
+      </div>
+    )
+  }
+
+  return user ? <Navigate to="/dashboard" replace /> : <Landing />
 }
 
 function App() {
@@ -32,16 +48,14 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/signin" element={<SignIn />} />
+          <Route path="/" element={<LandingOrDashboard />} />
           <Route
-            path="/"
             element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="troop/:troopId" element={<TroopDetail />} />
             <Route path="profile" element={<Profile />} />
